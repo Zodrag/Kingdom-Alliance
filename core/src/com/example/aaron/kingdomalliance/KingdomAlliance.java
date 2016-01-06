@@ -13,6 +13,7 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.glutils.FloatTextureData;
 import com.badlogic.gdx.input.GestureDetector;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
@@ -27,6 +28,8 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 
 import java.awt.Label;
+
+import javax.swing.JRadioButtonMenuItem;
 
 public class KingdomAlliance extends ApplicationAdapter implements GestureDetector.GestureListener {
 
@@ -51,7 +54,7 @@ public class KingdomAlliance extends ApplicationAdapter implements GestureDetect
 	private Table dialogKingdomTable;
 
 	public interface KingdomAllianceCallback {
-		public void onStartActivityLogin();
+		void onStartActivityLogin();
 	}
 
 	public void setKingdomAllianceCallback(KingdomAllianceCallback callback){
@@ -59,11 +62,9 @@ public class KingdomAlliance extends ApplicationAdapter implements GestureDetect
 	}
 
 	public void intentToMainActivity(){
-		Integer x = 1;
+
 		if (kingdomAllianceCallback != null){
-			if (x == 1){
-				kingdomAllianceCallback.onStartActivityLogin();
-			}
+			kingdomAllianceCallback.onStartActivityLogin();
 		}
 	}
 
@@ -97,10 +98,19 @@ public class KingdomAlliance extends ApplicationAdapter implements GestureDetect
 		skinKingdom.dispose();
 	}
 
+	float totalTime = 5 * 60;
+
 	@Override
 	public void render () {
 		Gdx.gl.glClearColor(1, 1, 1, 1); //Color White
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT); //White background
+
+		float deltaTime = Gdx.graphics.getDeltaTime();
+		totalTime -= deltaTime;
+		int minutes = ((int)totalTime) / 60;
+		int seconds = ((int)totalTime) % 60;
+
+		message = Integer.toString(minutes) + "m " + Integer.toString(seconds) + "s";
 
 		layoutMessage.setText(fontMessage, message);
 		layoutTitle.setText(fontTitle, title);
@@ -121,6 +131,16 @@ public class KingdomAlliance extends ApplicationAdapter implements GestureDetect
 
 		stageButton.draw(); //draw buttons last separately works
 		stageKingdom.draw();
+	}
+
+	@Override
+	public void pause() {
+		super.pause();
+	}
+
+	@Override
+	public void resume() {
+		super.resume();
 	}
 
 	@Override
@@ -159,7 +179,7 @@ public class KingdomAlliance extends ApplicationAdapter implements GestureDetect
 		camera.update();
 		return true;
 	}
-	
+
 	@Override
 	public boolean panStop(float x, float y, int pointer, int button) {
 		return false;
@@ -183,7 +203,8 @@ public class KingdomAlliance extends ApplicationAdapter implements GestureDetect
 		fontTitle.setColor(Color.GOLD);
 		fontTitle.getData().scale(8);
 		fontButton = new BitmapFont();
-		fontButton.setColor(Color.BROWN);
+		fontButton.setColor(Color.RED);
+		fontButton.getData().scale(1);
 	}
 
 	public void createImages(){
@@ -229,20 +250,19 @@ public class KingdomAlliance extends ApplicationAdapter implements GestureDetect
 		skinKingdom = new Skin();
 		buttonAtlas = new TextureAtlas("button/button.pack");
 		skinKingdom.addRegions(buttonAtlas);
-		textButtonStyle = new TextButton.TextButtonStyle();
-		textButtonStyle.font = fontButton;
-		textButtonStyle.up = skinButton.getDrawable("button.up");
-		textButtonStyle.down = skinButton.getDrawable("button.down");
-		textButtonStyle.pressedOffsetX = 1;
-		textButtonStyle.pressedOffsetY = -1;
 		buttonTrain = new TextButton("Train Troops", textButtonStyle);
-		buttonTrain.pad(20);
+		buttonResources = new TextButton("Resources", textButtonStyle);
+		buttonInformation = new TextButton("Game Information", textButtonStyle);
 		buttonWidth = textButtonStyle.up.getMinWidth();
-		buttonTrain.setPosition(screenWidth - buttonWidth, 0);
 		buttonTrain.addListener(clickListener);
+		buttonResources.addListener(clickListener);
+		buttonInformation.addListener(clickListener);
+		buttonWidth = buttonTrain.getMinWidth();
 		dialogKingdomTable = new Table(skinKingdom);
-		dialogKingdomTable.setBounds(0, 0, screenWidth, screenHeight);
-		dialogKingdomTable.add(buttonTrain);
+		dialogKingdomTable.setPosition(screenWidth / 2, buttonWidth / 2); // (0,0) is the center of the entire table at bottom left corner
+		dialogKingdomTable.add(buttonTrain).padRight(50); // space between buttons
+		dialogKingdomTable.add(buttonResources).padRight(50);
+		dialogKingdomTable.add(buttonInformation);
 		dialogKingdomTable.debug();
 		dialogKingdomTable.setVisible(false);
 		stageKingdom.addActor(dialogKingdomTable);
@@ -262,7 +282,6 @@ public class KingdomAlliance extends ApplicationAdapter implements GestureDetect
 		float HW = camera.viewportWidth / 2, HH = camera.viewportHeight / 2;
 		camPos.x = MathUtils.clamp(camPos.x, spriteMap.getWidth()/2 - spriteMap.getWidth() + HW, spriteMap.getWidth() - spriteMap.getWidth()/2 - HW);
 		camPos.y = MathUtils.clamp(camPos.y, spriteMap.getHeight()/2 - spriteMap.getWidth() + HH, spriteMap.getHeight() - spriteMap.getHeight()/2 - HH);
-		message = Float.toString(camPos.x) + " " + Float.toString(camPos.y);
 	}
 
 	ClickListener clickListener = new ClickListener(){
@@ -274,10 +293,14 @@ public class KingdomAlliance extends ApplicationAdapter implements GestureDetect
 			}
 			else if (actor == buttonTrain){
 				message = "Training Troops";
-				dialogKingdomTable.setVisible(false);
 			}
-
+			else if (actor == buttonResources){
+				message = "Looking at Resources";
+			}
+			else if (actor == buttonInformation){
+				message = "Looking at game information";
+			}
+			dialogKingdomTable.setVisible(false);
 		}
 	};
-
 }
